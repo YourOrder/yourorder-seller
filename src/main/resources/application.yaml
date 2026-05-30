@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: yourorder-seller
+
+  datasource:
+    url: jdbc:postgresql://localhost:5433/mydb
+    username: postgres
+    password: 1234
+    driver-class-name: org.postgresql.Driver
+
+server:
+  port: 8081
