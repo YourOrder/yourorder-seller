@@ -5,6 +5,8 @@ import jcn.yourorderseller.core.product.dto.request.CreateProductRequest;
 import jcn.yourorderseller.core.product.dto.request.UpdateProductRequest;
 import jcn.yourorderseller.core.product.dto.response.ProductResponse;
 import jcn.yourorderseller.core.product.service.ProductService;
+import jcn.yourorderseller.core.stock.dto.request.StockAdjustmentRequest;
+import jcn.yourorderseller.core.stock.dto.request.UpdateStockQuantityRequest;
 import jcn.yourorderseller.security.model.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -61,6 +63,36 @@ public class ProductController {
             @AuthenticationPrincipal UserPrincipal user
     ) {
         return productService.updateProduct(productId, request, user);
+    }
+
+    @PreAuthorize("hasAnyRole('SUPPLIER', 'ADMIN')")
+    @PutMapping("/{productId}/stock")
+    public ProductResponse updateStockQuantity(
+            @PathVariable UUID productId,
+            @Valid @RequestBody UpdateStockQuantityRequest request,
+            @AuthenticationPrincipal UserPrincipal user
+    ) {
+        return productService.updateStockQuantity(productId, request.quantity(), user);
+    }
+
+    @PreAuthorize("hasAnyRole('SUPPLIER', 'ADMIN')")
+    @PatchMapping("/{productId}/stock/reserve")
+    public ProductResponse reserveStock(
+            @PathVariable UUID productId,
+            @Valid @RequestBody StockAdjustmentRequest request,
+            @AuthenticationPrincipal UserPrincipal user
+    ) {
+        return productService.reserveStock(productId, request.amount(), user);
+    }
+
+    @PreAuthorize("hasAnyRole('SUPPLIER', 'ADMIN')")
+    @PatchMapping("/{productId}/stock/release")
+    public ProductResponse releaseStock(
+            @PathVariable UUID productId,
+            @Valid @RequestBody StockAdjustmentRequest request,
+            @AuthenticationPrincipal UserPrincipal user
+    ) {
+        return productService.releaseStock(productId, request.amount(), user);
     }
 
     @PreAuthorize("hasAnyRole('SUPPLIER', 'ADMIN')")

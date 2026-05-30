@@ -56,6 +56,16 @@ public class StockService {
     }
 
     @Transactional
+    public Stock updateQuantity(UUID productId, Integer quantity) {
+        Stock stock = getStock(productId);
+        stock.setQuantity(quantity);
+        if (stock.getAvailableQuantity() < 0) {
+            throw new IllegalStateException("Quantity cannot be lower than reserved quantity");
+        }
+        return stockRepository.save(stock);
+    }
+
+    @Transactional
     public void reserveOrder(OrderCreatedEvent event) {
         if (stockReservationRepository.existsByOrderId(event.orderId())) {
             return;

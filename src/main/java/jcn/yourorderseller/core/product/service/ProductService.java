@@ -91,6 +91,39 @@ public class ProductService {
     }
 
     @Transactional
+    public ProductResponse updateStockQuantity(UUID productId, Integer quantity, UserPrincipal user) {
+        Product product = getProductOrThrow(productId);
+        if (!isAdmin(user)) {
+            checkUserCanManageCompany(user.userId(), product.getCompanyId());
+        }
+
+        Stock stock = stockService.updateQuantity(productId, quantity);
+        return toResponse(product, stock);
+    }
+
+    @Transactional
+    public ProductResponse reserveStock(UUID productId, Integer amount, UserPrincipal user) {
+        Product product = getProductOrThrow(productId);
+        if (!isAdmin(user)) {
+            checkUserCanManageCompany(user.userId(), product.getCompanyId());
+        }
+
+        Stock stock = stockService.reserve(productId, amount);
+        return toResponse(product, stock);
+    }
+
+    @Transactional
+    public ProductResponse releaseStock(UUID productId, Integer amount, UserPrincipal user) {
+        Product product = getProductOrThrow(productId);
+        if (!isAdmin(user)) {
+            checkUserCanManageCompany(user.userId(), product.getCompanyId());
+        }
+
+        Stock stock = stockService.release(productId, amount);
+        return toResponse(product, stock);
+    }
+
+    @Transactional
     public void deleteProduct(UUID productId, UserPrincipal user) {
         Product product = getProductOrThrow(productId);
         if (!isAdmin(user)) {
