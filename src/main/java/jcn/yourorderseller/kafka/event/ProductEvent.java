@@ -7,6 +7,9 @@ public record ProductEvent(
         UUID id,
         String name,
         BigDecimal price,
-        UUID companyId
+        String imageUrl,
+        UUID companyId,
+        Integer quantity,
+        Integer reservedQuantity
 ) {
 }

@@ -24,4 +24,6 @@ public interface SellerRepository extends JpaRepository<Seller, UUID> {
     Page<Seller> findAllByUserId(UUID userId, Pageable pageable);
 
     Page<Seller> findAllByCompanyId(UUID companyId, Pageable pageable);
+
+    void deleteAllByCompanyId(UUID companyId);
 }

@@ -8,6 +8,7 @@ public record ProductResponse(
         UUID id,
         String name,
         BigDecimal price,
+        String imageUrl,
         UUID companyId,
         Instant createdAt,
         Instant updatedAt,

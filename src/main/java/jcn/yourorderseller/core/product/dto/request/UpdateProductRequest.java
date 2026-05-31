@@ -12,6 +12,8 @@ public record UpdateProductRequest(
 
         @NotNull
         @DecimalMin(value = "0.01")
-        BigDecimal price
+        BigDecimal price,
+
+        String imageUrl
 ) {
 }

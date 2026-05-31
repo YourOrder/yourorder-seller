@@ -8,6 +8,7 @@ import java.util.UUID;
 public record OrderCreatedEvent(
         UUID orderId,
         UUID userId,
+        UUID companyId,
         BigDecimal totalAmount,
         LocalDateTime createdAt,
         List<OrderItemEvent> items

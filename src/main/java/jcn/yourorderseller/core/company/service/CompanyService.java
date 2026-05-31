@@ -2,6 +2,7 @@ package jcn.yourorderseller.core.company.service;
 
 import jcn.yourorderseller.core.company.dto.request.AddSellerRequest;
 import jcn.yourorderseller.core.company.dto.request.CreateCompanyRequest;
+import jcn.yourorderseller.core.company.dto.request.UpdateCompanyRequest;
 import jcn.yourorderseller.core.company.dto.response.CompanyResponse;
 import jcn.yourorderseller.core.company.dto.response.SellerResponse;
 import jcn.yourorderseller.core.company.entity.Company;
@@ -9,8 +10,12 @@ import jcn.yourorderseller.core.company.entity.Seller;
 import jcn.yourorderseller.core.company.entity.SellerRole;
 import jcn.yourorderseller.core.company.repository.CompanyRepository;
 import jcn.yourorderseller.core.company.repository.SellerRepository;
+import jcn.yourorderseller.core.product.entity.Product;
+import jcn.yourorderseller.core.product.repository.ProductRepository;
+import jcn.yourorderseller.core.stock.service.StockService;
 import jcn.yourorderseller.exception.NotFoundException;
 import jcn.yourorderseller.kafka.producer.CompanyEventProducer;
+import jcn.yourorderseller.kafka.producer.ProductEventProducer;
 import jcn.yourorderseller.security.model.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +33,9 @@ public class CompanyService {
     private final CompanyRepository companyRepository;
     private final SellerRepository sellerRepository;
     private final CompanyEventProducer companyEventProducer;
+    private final ProductRepository productRepository;
+    private final StockService stockService;
+    private final ProductEventProducer productEventProducer;
 
     @Transactional
     public CompanyResponse createCompany(CreateCompanyRequest request, UserPrincipal user) {
@@ -78,6 +86,36 @@ public class CompanyService {
         Company company = getCompanyByIdOrThrow(companyId);
 
         return toCompanyResponse(company);
+    }
+
+    @Transactional
+    public CompanyResponse updateCompany(UUID companyId, UpdateCompanyRequest request, UserPrincipal user) {
+        if (!isAdmin(user)) {
+            checkUserIsOwner(user.userId(), companyId);
+        }
+
+        Company company = getCompanyByIdOrThrow(companyId);
+        company.setName(request.name());
+        Company savedCompany = companyRepository.save(company);
+        companyEventProducer.sendCompanyUpdated(savedCompany);
+        return toCompanyResponse(savedCompany);
+    }
+
+    @Transactional
+    public void deleteCompany(UUID companyId, UserPrincipal user) {
+        if (!isAdmin(user)) {
+            checkUserIsOwner(user.userId(), companyId);
+        }
+
+        Company company = getCompanyByIdOrThrow(companyId);
+        List<Product> products = productRepository.findAllByCompanyId(companyId);
+        products.forEach(product -> {
+            productEventProducer.sendProductDeleted(product);
+            stockService.deleteByProductId(product.getId());
+        });
+        productRepository.deleteAll(products);
+        sellerRepository.deleteAllByCompanyId(companyId);
+        companyRepository.delete(company);
     }
 
     @Transactional

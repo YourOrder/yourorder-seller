@@ -3,6 +3,7 @@ package jcn.yourorderseller.core.company.controller;
 import jakarta.validation.Valid;
 import jcn.yourorderseller.core.company.dto.request.AddSellerRequest;
 import jcn.yourorderseller.core.company.dto.request.CreateCompanyRequest;
+import jcn.yourorderseller.core.company.dto.request.UpdateCompanyRequest;
 import jcn.yourorderseller.core.company.dto.response.CompanyResponse;
 import jcn.yourorderseller.core.company.dto.response.SellerResponse;
 import jcn.yourorderseller.core.company.service.CompanyService;
@@ -54,6 +55,25 @@ public class CompanyController {
             @AuthenticationPrincipal UserPrincipal user
     ) {
         return companyService.getCompany(companyId, user);
+    }
+
+    @PreAuthorize("hasAnyRole('SUPPLIER', 'ADMIN')")
+    @PutMapping("/{companyId}")
+    public CompanyResponse updateCompany(
+            @PathVariable UUID companyId,
+            @Valid @RequestBody UpdateCompanyRequest request,
+            @AuthenticationPrincipal UserPrincipal user
+    ) {
+        return companyService.updateCompany(companyId, request, user);
+    }
+
+    @PreAuthorize("hasAnyRole('SUPPLIER', 'ADMIN')")
+    @DeleteMapping("/{companyId}")
+    public void deleteCompany(
+            @PathVariable UUID companyId,
+            @AuthenticationPrincipal UserPrincipal user
+    ) {
+        companyService.deleteCompany(companyId, user);
     }
 
     @PreAuthorize("hasAnyRole('SUPPLIER', 'ADMIN')")

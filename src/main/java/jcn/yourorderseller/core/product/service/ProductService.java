@@ -36,13 +36,14 @@ public class ProductService {
         Product product = Product.builder()
                 .name(request.name())
                 .price(request.price())
+                .imageUrl(request.imageUrl())
                 .companyId(request.companyId())
                 .build();
 
         Product savedProduct = productRepository.save(product);
         Stock stock = stockService.createInitialStock(savedProduct.getId(), request.quantity());
 
-        productEventProducer.sendProductCreated(savedProduct);
+        productEventProducer.sendProductCreated(savedProduct, stock);
         return toResponse(savedProduct, stock);
     }
 
@@ -83,11 +84,13 @@ public class ProductService {
 
         product.setName(request.name());
         product.setPrice(request.price());
+        product.setImageUrl(request.imageUrl());
 
         Product savedProduct = productRepository.save(product);
+        Stock stock = stockService.getStock(savedProduct.getId());
 
-        productEventProducer.sendProductUpdated(savedProduct);
-        return toResponse(savedProduct);
+        productEventProducer.sendProductUpdated(savedProduct, stock);
+        return toResponse(savedProduct, stock);
     }
 
     @Transactional
@@ -98,6 +101,7 @@ public class ProductService {
         }
 
         Stock stock = stockService.updateQuantity(productId, quantity);
+        productEventProducer.sendProductUpdated(product, stock);
         return toResponse(product, stock);
     }
 
@@ -109,6 +113,7 @@ public class ProductService {
         }
 
         Stock stock = stockService.reserve(productId, amount);
+        productEventProducer.sendProductUpdated(product, stock);
         return toResponse(product, stock);
     }
 
@@ -120,6 +125,7 @@ public class ProductService {
         }
 
         Stock stock = stockService.release(productId, amount);
+        productEventProducer.sendProductUpdated(product, stock);
         return toResponse(product, stock);
     }
 
@@ -150,6 +156,7 @@ public class ProductService {
                 product.getId(),
                 product.getName(),
                 product.getPrice(),
+                product.getImageUrl(),
                 product.getCompanyId(),
                 product.getCreatedAt(),
                 product.getUpdatedAt(),

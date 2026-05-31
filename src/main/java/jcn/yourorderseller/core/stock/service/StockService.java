@@ -3,11 +3,14 @@ package jcn.yourorderseller.core.stock.service;
 import jcn.yourorderseller.core.stock.dto.response.StockResponse;
 import jcn.yourorderseller.core.stock.entity.Stock;
 import jcn.yourorderseller.core.stock.entity.StockReservation;
+import jcn.yourorderseller.core.product.entity.Product;
+import jcn.yourorderseller.core.product.repository.ProductRepository;
 import jcn.yourorderseller.core.stock.repository.StockReservationRepository;
 import jcn.yourorderseller.core.stock.repository.StockRepository;
 import jcn.yourorderseller.exception.NotFoundException;
 import jcn.yourorderseller.kafka.event.OrderCreatedEvent;
 import jcn.yourorderseller.kafka.event.OrderItemEvent;
+import jcn.yourorderseller.kafka.producer.ProductEventProducer;
 import jcn.yourorderseller.kafka.producer.StockEventProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,6 +26,8 @@ public class StockService {
     private final StockRepository stockRepository;
     private final StockReservationRepository stockReservationRepository;
     private final StockEventProducer stockEventProducer;
+    private final ProductRepository productRepository;
+    private final ProductEventProducer productEventProducer;
 
     @Transactional
     public Stock createInitialStock(UUID productId, Integer quantity) {
@@ -72,12 +77,13 @@ public class StockService {
         }
 
         for (OrderItemEvent item : event.items()) {
-            reserve(item.productId(), item.quantity());
+            Stock stock = reserve(item.productId(), item.quantity());
             stockReservationRepository.save(StockReservation.builder()
                     .orderId(event.orderId())
                     .productId(item.productId())
                     .quantity(item.quantity())
                     .build());
+            sendProductStockUpdated(item.productId(), stock);
         }
 
         stockEventProducer.sendStockReserved(event.orderId());
@@ -88,7 +94,8 @@ public class StockService {
         List<StockReservation> reservations = stockReservationRepository.findAllByOrderId(orderId);
 
         for (StockReservation reservation : reservations) {
-            release(reservation.getProductId(), reservation.getQuantity());
+            Stock stock = release(reservation.getProductId(), reservation.getQuantity());
+            sendProductStockUpdated(reservation.getProductId(), stock);
         }
 
         stockReservationRepository.deleteAllByOrderId(orderId);
@@ -96,6 +103,20 @@ public class StockService {
         if (!reservations.isEmpty()) {
             stockEventProducer.sendStockReleased(orderId);
         }
+    }
+
+    @Transactional
+    public void confirmOrder(UUID orderId) {
+        List<StockReservation> reservations = stockReservationRepository.findAllByOrderId(orderId);
+
+        for (StockReservation reservation : reservations) {
+            Stock stock = getStock(reservation.getProductId());
+            stock.consumeReserved(reservation.getQuantity());
+            Stock saved = stockRepository.save(stock);
+            sendProductStockUpdated(reservation.getProductId(), saved);
+        }
+
+        stockReservationRepository.deleteAllByOrderId(orderId);
     }
 
     @Transactional
@@ -110,5 +131,11 @@ public class StockService {
                 stock.getReservedQuantity(),
                 stock.getAvailableQuantity()
         );
+    }
+
+    private void sendProductStockUpdated(UUID productId, Stock stock) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException("Product not found"));
+        productEventProducer.sendProductUpdated(product, stock);
     }
 }

@@ -1,6 +1,7 @@
 package jcn.yourorderseller.kafka.producer;
 
 import jcn.yourorderseller.core.product.entity.Product;
+import jcn.yourorderseller.core.stock.entity.Stock;
 import jcn.yourorderseller.kafka.config.KafkaTopicsProperties;
 import jcn.yourorderseller.kafka.event.ProductDeletedEvent;
 import jcn.yourorderseller.kafka.event.ProductEvent;
@@ -17,14 +18,14 @@ public class ProductEventProducer {
     private final KafkaTemplate<String, Object> kafkaTemplate;
     private final KafkaTopicsProperties topics;
 
-    public void sendProductCreated(Product product) {
-        ProductEvent event = toEvent(product);
+    public void sendProductCreated(Product product, Stock stock) {
+        ProductEvent event = toEvent(product, stock);
         kafkaTemplate.send(topics.getProductCreated(), product.getId().toString(), event);
         log.info("Sent product.created event: {}", event);
     }
 
-    public void sendProductUpdated(Product product) {
-        ProductEvent event = toEvent(product);
+    public void sendProductUpdated(Product product, Stock stock) {
+        ProductEvent event = toEvent(product, stock);
         kafkaTemplate.send(topics.getProductUpdated(), product.getId().toString(), event);
         log.info("Sent product.updated event: {}", event);
     }
@@ -35,12 +36,15 @@ public class ProductEventProducer {
         log.info("Sent product.deleted event: {}", event);
     }
 
-    private ProductEvent toEvent(Product product) {
+    private ProductEvent toEvent(Product product, Stock stock) {
         return new ProductEvent(
                 product.getId(),
                 product.getName(),
                 product.getPrice(),
-                product.getCompanyId()
+                product.getImageUrl(),
+                product.getCompanyId(),
+                stock.getQuantity(),
+                stock.getReservedQuantity()
         );
     }
 }

@@ -58,4 +58,21 @@ public class Stock {
 
         this.reservedQuantity -= amount;
     }
+
+    public void consumeReserved(Integer amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Consume amount must be positive");
+        }
+
+        if (reservedQuantity < amount) {
+            throw new IllegalStateException("Cannot consume more than reserved");
+        }
+
+        if (quantity < amount) {
+            throw new IllegalStateException("Cannot consume more than stock quantity");
+        }
+
+        this.reservedQuantity -= amount;
+        this.quantity -= amount;
+    }
 }

@@ -19,4 +19,6 @@ public class KafkaTopicsProperties {
     private String orderCancelled;
     private String stockReserved;
     private String stockReleased;
+    private String paymentCompleted;
+    private String paymentFailed;
 }

@@ -16,6 +16,8 @@ public record CreateProductRequest(
         @DecimalMin(value = "0.01")
         BigDecimal price,
 
+        String imageUrl,
+
         @NotNull
         UUID companyId,
 
